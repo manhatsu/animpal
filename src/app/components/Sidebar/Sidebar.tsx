@@ -1,9 +1,9 @@
 'use client'
 
-import { BookOpenIcon } from '@heroicons/react/24/outline'
+import { BookOpenIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 
-export type NavItemKey = 'diary'
+export type NavItemKey = 'diary' | 'avatar_settings'
 
 interface SidebarProps {
   selectedNavItem: NavItemKey
@@ -12,6 +12,7 @@ interface SidebarProps {
 
 const navItems = [
   { key: 'diary', label: '日記', icon: BookOpenIcon },
+  { key: 'avatar_settings', label: 'アバター設定', icon: Cog6ToothIcon },
 ]
 
 export default function Sidebar({ selectedNavItem, onSelectNavItem }: SidebarProps) {

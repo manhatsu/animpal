@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Diary } from '@/types/diary'
 import Header from './components/Header/Header'
@@ -8,13 +8,40 @@ import DiaryForm from './components/Diary/DiaryForm'
 import DiaryListArea from './components/Diary/DiaryList'
 import DiaryViewer from './components/Diary/DiaryViewer'
 import Sidebar, { NavItemKey } from './components/Sidebar/Sidebar'
-import { saveDiaryToDB, getDiariesFromDB } from '../utils/db'
+import AvatarDisplay from './components/AvatarDisplay/AvatarDisplay'
+import AvatarUploadForm from './components/AvatarUpload/AvatarUploadForm'
+import { saveAvatarToDB, getAvatarFromDB, clearAvatarFromDB, saveDiaryToDB, getDiariesFromDB } from '../utils/db'
 
 export default function HomePage() {
   const [diaries, setDiaries] = useState<Diary[]>([])
   const [selectedDiary, setSelectedDiary] = useState<Diary | null>(null)
   const [creating, setCreating] = useState<boolean>(false)
   const [selectedNavItem, setSelectedNavItem] = useState<NavItemKey>('diary')
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarFileType, setAvatarFileType] = useState<'gif' | 'mp4' | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previousObjectUrl, setPreviousObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      try {
+        const avatarData = await getAvatarFromDB();
+        if (avatarData && avatarData.file) {
+          if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
+          const url = URL.createObjectURL(avatarData.file);
+          setAvatarUrl(url);
+          setAvatarFileType(avatarData.fileType);
+          setPreviousObjectUrl(url);
+        }
+      } catch (error) {
+        console.error("Failed to load avatar from DB", error);
+      }
+    };
+    if (typeof window !== 'undefined') {
+      loadAvatar();
+    }
+  }, []);
 
   useEffect(() => {
     const loadDiaries = async () => {
@@ -41,6 +68,14 @@ export default function HomePage() {
       document.body.style.overflow = 'auto'
     }
   }, [selectedDiary, selectedNavItem])
+
+  useEffect(() => {
+    return () => {
+      if (avatarUrl && avatarUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+    };
+  }, [avatarUrl]);
 
   const handleSaveDiary = async (newDiary: Diary) => {
     const newDiaries = [newDiary, ...diaries]
@@ -70,6 +105,38 @@ export default function HomePage() {
     setSelectedDiary(null)
   }
 
+  const handleAvatarUpload = useCallback(async (file: File, fileType: 'gif' | 'mp4') => {
+    try {
+      await saveAvatarToDB(file, fileType);
+      if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
+      
+      const newUrl = URL.createObjectURL(file);
+      setAvatarUrl(newUrl);
+      setAvatarFileType(fileType);
+      setAvatarFile(file);
+      setPreviousObjectUrl(newUrl);
+      alert('アバターが更新されました！');
+    } catch (error) {
+      alert('アバターの保存に失敗しました。');
+      console.error("Failed to save avatar", error);
+    }
+  }, [previousObjectUrl]);
+
+  const handleClearAvatar = useCallback(async () => {
+    try {
+      await clearAvatarFromDB();
+      if (avatarUrl && avatarUrl.startsWith('blob:')) URL.revokeObjectURL(avatarUrl);
+      setAvatarUrl(null);
+      setAvatarFileType(null);
+      setAvatarFile(null);
+      setPreviousObjectUrl(null);
+      alert('アバターをクリアしました。');
+    } catch (error) {
+      alert('アバターのクリアに失敗しました。');
+      console.error("Failed to clear avatar", error);
+    }
+  }, [avatarUrl]);
+
   return (
     <div className="flex h-screen bg-neutral-950 text-white">
       <Sidebar selectedNavItem={selectedNavItem} onSelectNavItem={setSelectedNavItem} />
@@ -92,8 +159,19 @@ export default function HomePage() {
               </motion.div>
             )}
             {!creating && !selectedDiary && (
-              <div className="text-center text-neutral-500 p-8">日記を作成するか、下から選択してください。</div>
+              <AvatarDisplay avatarUrl={avatarUrl} fileType={avatarFileType} />
             )}
+          </main>
+        )}
+
+        {selectedNavItem === 'avatar_settings' && (
+          <main className="flex-1 overflow-y-auto p-8 flex items-center justify-center">
+            <AvatarUploadForm 
+              onAvatarUpload={handleAvatarUpload} 
+              currentAvatarUrl={avatarUrl} 
+              currentFileType={avatarFileType} 
+              onClearAvatar={handleClearAvatar}
+            />
           </main>
         )}
 
