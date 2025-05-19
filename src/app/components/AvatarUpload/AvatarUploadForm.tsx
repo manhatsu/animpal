@@ -4,15 +4,23 @@ import React, { useState, useCallback } from 'react'
 import { ArrowUpTrayIcon } from '@heroicons/react/24/outline'
 
 interface AvatarUploadFormProps {
-  onAvatarUpload: (file: File, fileType: 'gif' | 'mp4') => void
+  onAvatarUpload: (file: File, fileType: 'gif' | 'mp4', name: string) => void
   currentAvatarUrl?: string | null
   currentFileType?: 'gif' | 'mp4' | null
+  currentName?: string | null
   onClearAvatar?: () => Promise<void>
 }
 
-const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, currentAvatarUrl, currentFileType, onClearAvatar }) => {
+const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, currentAvatarUrl, currentFileType, currentName, onClearAvatar }) => {
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState<string>(currentName || '')
+
+  React.useEffect(() => {
+    if (currentName) {
+      setName(currentName)
+    }
+  }, [currentName])
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -33,13 +41,17 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
 
   const processFile = (file: File) => {
     setError(null)
+    if (!name.trim()) {
+      setError('名前を入力してください。')
+      return
+    }
     if (file.type === 'image/gif' || file.type === 'video/mp4') {
-      const fileType = file.type === 'image/gif' ? 'gif' : 'mp4';
+      const fileType = file.type === 'image/gif' ? 'gif' : 'mp4'
       if (file.size > 10 * 1024 * 1024) { // 10MB size limit
         setError('ファイルサイズは10MB以下にしてください。')
-        return;
+        return
       }
-      onAvatarUpload(file, fileType)
+      onAvatarUpload(file, fileType, name)
     } else {
       setError('GIFまたはMP4ファイルを選択してください。')
     }
@@ -66,6 +78,21 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
     <div className="max-w-xl mx-auto p-8 bg-neutral-800 rounded-lg shadow-xl">
       <h2 className="text-2xl font-semibold text-foreground mb-6 text-center">アバターを設定</h2>
       
+      <div className="mb-6">
+        <label htmlFor="avatarName" className="block text-sm font-medium text-neutral-300 mb-1.5">
+          アバターの名前
+        </label>
+        <input
+          type="text"
+          id="avatarName"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="例: マイパル"
+          className="w-full px-4 py-2.5 bg-neutral-700/60 border border-neutral-600 rounded-lg text-foreground placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-colors"
+          required
+        />
+      </div>
+
       <div 
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
                     ${dragging ? 'border-sky-500 bg-sky-500/10' : 'border-neutral-600 hover:border-neutral-500'}`}

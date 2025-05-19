@@ -2,14 +2,23 @@ import { PlusIcon } from '@heroicons/react/24/outline'
 
 interface HeaderProps {
   onNew: () => void
+  avatarName?: string | null;
 }
 
-export default function Header({ onNew }: HeaderProps) {
+export default function Header({ onNew, avatarName }: HeaderProps) {
   return (
     <div className="p-4 border-b border-border">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-foreground">
-          Anim<span className="text-sky-400">P</span>al
+          {avatarName ? (
+            <>
+              Your <span className="text-sky-400">P</span>al: {avatarName}
+            </>
+          ) : (
+            <>
+              Your <span className="text-sky-400">P</span>al: ?
+            </>
+          )}
         </h1>
         <button
           onClick={onNew}

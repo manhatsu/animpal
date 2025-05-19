@@ -21,6 +21,7 @@ export default function HomePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarFileType, setAvatarFileType] = useState<'gif' | 'mp4' | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarName, setAvatarName] = useState<string | null>(null);
   const [previousObjectUrl, setPreviousObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function HomePage() {
           const url = URL.createObjectURL(avatarData.file);
           setAvatarUrl(url);
           setAvatarFileType(avatarData.fileType);
+          setAvatarName(avatarData.name || null);
           setPreviousObjectUrl(url);
         }
       } catch (error) {
@@ -105,15 +107,16 @@ export default function HomePage() {
     setSelectedDiary(null)
   }
 
-  const handleAvatarUpload = useCallback(async (file: File, fileType: 'gif' | 'mp4') => {
+  const handleAvatarUpload = useCallback(async (file: File, fileType: 'gif' | 'mp4', name: string) => {
     try {
-      await saveAvatarToDB(file, fileType);
+      await saveAvatarToDB(file, fileType, name);
       if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
       
       const newUrl = URL.createObjectURL(file);
       setAvatarUrl(newUrl);
       setAvatarFileType(fileType);
       setAvatarFile(file);
+      setAvatarName(name);
       setPreviousObjectUrl(newUrl);
       alert('アバターが更新されました！');
     } catch (error) {
@@ -129,6 +132,7 @@ export default function HomePage() {
       setAvatarUrl(null);
       setAvatarFileType(null);
       setAvatarFile(null);
+      setAvatarName(null);
       setPreviousObjectUrl(null);
       alert('アバターをクリアしました。');
     } catch (error) {
@@ -142,7 +146,7 @@ export default function HomePage() {
       <Sidebar selectedNavItem={selectedNavItem} onSelectNavItem={setSelectedNavItem} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onNew={handleNewDiary} /> 
+        <Header onNew={handleNewDiary} avatarName={avatarName} />
 
         {selectedNavItem === 'diary' && (
           <main className="flex-1 overflow-y-auto p-8">
@@ -170,6 +174,7 @@ export default function HomePage() {
               onAvatarUpload={handleAvatarUpload} 
               currentAvatarUrl={avatarUrl} 
               currentFileType={avatarFileType} 
+              currentName={avatarName}
               onClearAvatar={handleClearAvatar}
             />
           </main>

@@ -3,12 +3,13 @@ import { Diary } from '@/types/diary';
 const DB_NAME = 'AnimPalDB';
 const AVATAR_STORE_NAME = 'avatarStore';
 const DIARY_STORE_NAME = 'diaryStore';
-const VERSION = 2;
+const VERSION = 3;
 
 export interface AvatarData {
   id: string; 
   file: Blob;
   fileType: 'gif' | 'mp4';
+  name: string;
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -37,7 +38,7 @@ const openDB = (): Promise<IDBDatabase> => {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(AVATAR_STORE_NAME)) { // アバターストア作成ロジックを再追加
+        if (!db.objectStoreNames.contains(AVATAR_STORE_NAME)) {
           db.createObjectStore(AVATAR_STORE_NAME, { keyPath: 'id' });
         }
         if (!db.objectStoreNames.contains(DIARY_STORE_NAME)) {
@@ -50,12 +51,12 @@ const openDB = (): Promise<IDBDatabase> => {
 };
 
 // アバター関連のDB関数を再追加
-export const saveAvatarToDB = async (file: File, fileType: 'gif' | 'mp4'): Promise<void> => {
+export const saveAvatarToDB = async (file: File, fileType: 'gif' | 'mp4', name: string): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([AVATAR_STORE_NAME], 'readwrite');
     const store = transaction.objectStore(AVATAR_STORE_NAME);
-    const request = store.put({ id: 'current_avatar', file: file as Blob, fileType });
+    const request = store.put({ id: 'current_avatar', file: file as Blob, fileType, name });
 
     request.onsuccess = () => resolve();
     request.onerror = (event) => {
