@@ -1,14 +1,16 @@
 import React from 'react'
 import { Diary } from '@/types/diary'
 import { motion } from 'framer-motion'
+import { PlusIcon } from '@heroicons/react/24/outline'
 
 type Props = {
   diaries: Diary[]
   onSelect: (diary: Diary) => void
   selectedDiary: Diary | null
+  onAddNewDiary: () => void
 }
 
-const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary }) => {
+const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary, onAddNewDiary }) => {
   return (
     <div className="p-4 h-full flex flex-col">
       <SectionLabel>日記一覧</SectionLabel>
@@ -19,13 +21,28 @@ const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary }) => {
       {/* </div> */}
       {/* ▲▲▲ テスト用のボックス ▲▲▲ */}
 
-      {diaries.length === 0 && (
+      {diaries.length === 0 && !onAddNewDiary && (
         <div className="text-muted-foreground p-4 text-sm text-center flex-1 flex items-center justify-center">
           まだ日記がありません
         </div>
       )}
       <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
         <div className="flex flex-wrap gap-4">
+          <motion.div
+            whileHover={{ scale: 1.03, transition: { duration: 0.1 } }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onAddNewDiary}
+            className={`
+              w-52 h-52 p-3 rounded-xl cursor-pointer
+              border-2 border-border bg-neutral-800 aspect-square
+              transition-colors duration-150 flex flex-col justify-center items-center
+              hover:bg-neutral-700 hover:border-accent
+            `}
+          >
+            <PlusIcon className="h-12 w-12 text-neutral-500 mb-2" />
+            <p className="text-sm text-neutral-400">新規作成</p>
+          </motion.div>
+
           {diaries.map((diary) => (
             <motion.div
               key={diary.id}

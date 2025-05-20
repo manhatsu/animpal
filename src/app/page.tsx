@@ -146,7 +146,7 @@ export default function HomePage() {
       <Sidebar selectedNavItem={selectedNavItem} onSelectNavItem={setSelectedNavItem} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onNew={handleNewDiary} avatarName={avatarName} />
+        <Header avatarName={avatarName} />
 
         {selectedNavItem === 'diary' && (
           <main className="flex-1 overflow-y-auto p-8">
@@ -191,6 +191,7 @@ export default function HomePage() {
               diaries={diaries}
               onSelect={handleSelectDiary}
               selectedDiary={selectedDiary}
+              onAddNewDiary={handleNewDiary}
             />
           </motion.aside>
         )}
