@@ -2,36 +2,39 @@
 
 import React from 'react'
 
-interface AvatarDisplayProps {
-  avatarUrl: string | null
-  fileType: 'gif' | 'mp4' | null
+type Props = {
+  avatarUrl: string | null;
+  fileType: 'gif' | 'mp4' | null;
 }
 
-const AvatarDisplay: React.FC<AvatarDisplayProps> = ({ avatarUrl, fileType }) => {
-  if (!avatarUrl || !fileType) {
+export default function AvatarDisplay({ avatarUrl, fileType }: Props) {
+  if (!avatarUrl) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-neutral-500">
-        <span className="text-6xl mb-4">🐾</span>
-        <p className="text-center">
-          アバターが設定されていません。
-          <br />
-          左のメニューから「アバター設定」を選択して、
-          <br />
-          お気に入りのGIFまたはMP4動画をアップロードしてください。
-        </p>
+        <span className="text-2xl mb-2">🎭</span>
+        <span className="text-base">アバターを設定してください</span>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-center h-full w-full">
-      {fileType === 'mp4' ? (
-        <video src={avatarUrl} className="max-w-full max-h-full object-contain" autoPlay loop muted playsInline />
+    <div className="w-full h-full flex items-center justify-center">
+      {fileType === 'gif' ? (
+        <img
+          src={avatarUrl}
+          alt="Avatar"
+          className="max-w-full max-h-full object-contain"
+        />
       ) : (
-        <img src={avatarUrl} alt="Avatar" className="max-w-full max-h-full object-contain" />
+        <video
+          src={avatarUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="max-w-full max-h-full object-contain"
+        />
       )}
     </div>
   )
-}
-
-export default AvatarDisplay 
+} 

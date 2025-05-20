@@ -15,6 +15,7 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState<string>(currentName || '')
+  const [isUploading, setIsUploading] = useState(false)
 
   React.useEffect(() => {
     if (currentName) {
@@ -39,7 +40,7 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
     }
   }, [])
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     setError(null)
     if (!name.trim()) {
       setError('名前を入力してください。')
@@ -51,7 +52,34 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
         setError('ファイルサイズは10MB以下にしてください。')
         return
       }
-      onAvatarUpload(file, fileType, name)
+
+      setIsUploading(true)
+      try {
+        // サーバーにファイルをアップロード
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('name', name)
+        formData.append('fileType', fileType)
+
+        const response = await fetch('/api/uploadAvatar', {
+          method: 'POST',
+          body: formData,
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'アップロードに失敗しました')
+        }
+
+        // アップロード成功後、親コンポーネントに通知
+        onAvatarUpload(file, fileType, name)
+      } catch (error) {
+        console.error('Upload error:', error)
+        setError(error instanceof Error ? error.message : 'アップロードに失敗しました')
+      } finally {
+        setIsUploading(false)
+      }
     } else {
       setError('GIFまたはMP4ファイルを選択してください。')
     }
@@ -74,6 +102,19 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
     setDragging(false)
   }, [])
 
+  const handleClearAvatar = async () => {
+    if (!onClearAvatar) return
+
+    if (confirm('現在のアバターを削除しますか？（この操作は元に戻せません）')) {
+      try {
+        await onClearAvatar()
+      } catch (e) {
+        console.error("Avatar clear failed from component", e)
+        setError('アバターの削除に失敗しました')
+      }
+    }
+  }
+
   return (
     <div className="max-w-xl mx-auto p-8 bg-neutral-800 rounded-lg shadow-xl">
       <h2 className="text-2xl font-semibold text-foreground mb-6 text-center">アバターを設定</h2>
@@ -95,24 +136,25 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
 
       <div 
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-                    ${dragging ? 'border-sky-500 bg-sky-500/10' : 'border-neutral-600 hover:border-neutral-500'}`}
+                    ${dragging ? 'border-sky-500 bg-sky-500/10' : 'border-neutral-600 hover:border-neutral-500'}
+                    ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
-        onClick={() => document.getElementById('avatar-upload-input')?.click()}
+        onClick={() => !isUploading && document.getElementById('avatar-upload-input')?.click()}
       >
         <input 
           type="file" 
           id="avatar-upload-input" 
           className="hidden" 
           accept=".gif,.mp4" 
-          onChange={handleFileChange} 
+          onChange={handleFileChange}
+          disabled={isUploading}
         />
         <ArrowUpTrayIcon className="h-12 w-12 mx-auto text-neutral-500 mb-3" />
         <p className="text-neutral-400">
-          ここにGIFまたはMP4ファイルをドラッグ＆ドロップ
-          <br />またはクリックしてファイルを選択
+          {isUploading ? 'アップロード中...' : 'ここにGIFまたはMP4ファイルをドラッグ＆ドロップ\nまたはクリックしてファイルを選択'}
         </p>
         <p className="text-xs text-neutral-500 mt-1">（最大10MB）</p>
       </div>
@@ -131,16 +173,7 @@ const AvatarUploadForm: React.FC<AvatarUploadFormProps> = ({ onAvatarUpload, cur
           </div>
           {onClearAvatar && (
             <button
-              onClick={async () => {
-                if(confirm('現在のアバターを削除しますか？（この操作は元に戻せません）')) {
-                  try {
-                    await onClearAvatar();
-                  } catch (e) {
-                    console.error("Avatar clear failed from component", e);
-                    // エラー処理が必要であればここで行う
-                  }
-                }
-              }}
+              onClick={handleClearAvatar}
               className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-800"
             >
               アバターを削除

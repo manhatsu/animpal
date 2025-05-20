@@ -1,10 +1,11 @@
 import { PlusIcon } from '@heroicons/react/24/outline'
 
-interface HeaderProps {
-  avatarName?: string | null;
+type HeaderProps = {
+  onNew: () => void;
+  avatarName: string | null;
 }
 
-export default function Header({ avatarName }: HeaderProps) {
+export default function Header({ onNew, avatarName }: HeaderProps) {
   return (
     <div className="p-4 border-b border-border">
       <div className="flex items-center justify-between">

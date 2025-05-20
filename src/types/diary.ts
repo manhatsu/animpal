@@ -1,7 +1,7 @@
 export type Diary = {
   id: string;
   text: string;
-  emotion: string;
-  image: string;
+  // emotion: string; // Emotion property removed
+  imageUrl: string;
   createdAt: string;
 }; 

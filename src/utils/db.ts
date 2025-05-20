@@ -3,11 +3,12 @@ import { Diary } from '@/types/diary';
 const DB_NAME = 'AnimPalDB';
 const AVATAR_STORE_NAME = 'avatarStore';
 const DIARY_STORE_NAME = 'diaryStore';
-const VERSION = 3;
+const VERSION = 4;
 
 export interface AvatarData {
-  id: string; 
-  file: Blob;
+  id: string;
+  fileUrl: string;
+  fileName: string;
   fileType: 'gif' | 'mp4';
   name: string;
 }
@@ -50,55 +51,58 @@ const openDB = (): Promise<IDBDatabase> => {
   return dbPromise;
 };
 
-// アバター関連のDB関数を再追加
-export const saveAvatarToDB = async (file: File, fileType: 'gif' | 'mp4', name: string): Promise<void> => {
+// アバター情報をDBに保存（サーバーのURLなどを保存）
+export const saveAvatarToDB = async (avatarData: AvatarData): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([AVATAR_STORE_NAME], 'readwrite');
     const store = transaction.objectStore(AVATAR_STORE_NAME);
-    const request = store.put({ id: 'current_avatar', file: file as Blob, fileType, name });
+    // 常に同じIDで保存し、現在のアバター情報を上書きする
+    const request = store.put({ ...avatarData, id: 'currentAvatar' }); 
 
     request.onsuccess = () => resolve();
     request.onerror = (event) => {
       console.error('Error saving avatar to DB:', (event.target as IDBRequest).error);
-      reject('Error saving avatar');
+      reject('Error saving avatar data');
     };
   });
 };
 
+// アバター情報をDBから取得
 export const getAvatarFromDB = async (): Promise<AvatarData | null> => {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([AVATAR_STORE_NAME], 'readonly');
       const store = transaction.objectStore(AVATAR_STORE_NAME);
-      const request = store.get('current_avatar');
+      const request = store.get('currentAvatar'); // 常に 'currentAvatar' IDで取得
 
       request.onsuccess = (event) => {
-        resolve(((event.target as IDBRequest).result as AvatarData) || null);
+        resolve((event.target as IDBRequest).result as AvatarData | null);
       };
       request.onerror = (event) => {
         console.error('Error getting avatar from DB:', (event.target as IDBRequest).error);
-        reject('Error getting avatar');
+        reject('Error getting avatar data');
       };
     });
   } catch (error) {
-    console.warn('Failed to open DB, likely during SSR:', error);
-    return null;
+    console.warn('Failed to open DB for avatar, likely during SSR:', error);
+    return null; 
   }
 };
 
+// アバター情報をDBから削除
 export const clearAvatarFromDB = async (): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([AVATAR_STORE_NAME], 'readwrite');
     const store = transaction.objectStore(AVATAR_STORE_NAME);
-    const request = store.delete('current_avatar');
+    const request = store.delete('currentAvatar'); // 常に 'currentAvatar' IDで削除
 
     request.onsuccess = () => resolve();
     request.onerror = (event) => {
       console.error('Error clearing avatar from DB:', (event.target as IDBRequest).error);
-      reject('Error clearing avatar');
+      reject('Error clearing avatar data');
     };
   });
 };
@@ -152,6 +156,21 @@ export const deleteDiaryFromDB = async (diaryId: string): Promise<void> => {
     request.onerror = (event) => {
       console.error('Error deleting diary from DB:', (event.target as IDBRequest).error);
       reject('Error deleting diary');
+    };
+  });
+};
+
+export const deleteAllDiariesFromDB = async (): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([DIARY_STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(DIARY_STORE_NAME);
+    const request = store.clear();
+
+    request.onsuccess = () => resolve();
+    request.onerror = (event) => {
+      console.error('Error clearing diaries from DB:', (event.target as IDBRequest).error);
+      reject('Error clearing diaries');
     };
   });
 }; 
