@@ -197,27 +197,13 @@ const DiaryForm: React.FC<Props> = ({ onSave, currentAvatarUrl, currentAvatarFil
         }
       } else {
         // Predefinedの画像生成処理
-        // emotion = detectEmotionPredefined(text); // Emotion no longer needed
-        const predefinedResponse = await fetch('/api/generateImage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ prompt: text }),
-        });
-
-        if (!predefinedResponse.ok) {
-          throw new Error('画像の生成に失敗しました');
-        }
-
-        const data = await predefinedResponse.json();
-        imageUrl = data.imageUrl;
+        const emotion = detectEmotionPredefined(text);
+        imageUrl = emotionToImage(emotion);
       }
 
       const newDiary: Diary = {
         id: Date.now().toString(),
         text,
-        // emotion, // Emotion property removed from Diary object
         imageUrl,
         createdAt: new Date().toISOString(),
       };
@@ -263,6 +249,7 @@ const DiaryForm: React.FC<Props> = ({ onSave, currentAvatarUrl, currentAvatarFil
                 checked={imageGenerationMethod === 'gemini'}
                 onChange={(e) => setImageGenerationMethod(e.target.value as ImageGenerationMethod)}
                 className="form-radio text-sky-500"
+                disabled={!currentAvatarUrl}
               />
               <span className="ml-2 text-sm text-neutral-300">Gemini AI</span>
             </label>

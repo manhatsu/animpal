@@ -19,7 +19,7 @@ const DiaryViewer: React.FC<Props> = ({ diary, onClose }) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-xl space-y-4 w-full max-w-lg relative"
+        className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-xl space-y-4 w-full max-w-2xl relative"
       >
         <button
           onClick={onClose}
@@ -28,16 +28,19 @@ const DiaryViewer: React.FC<Props> = ({ diary, onClose }) => {
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4">
+          <div className="text-xs text-neutral-500">{new Date(diary.createdAt).toLocaleString()}</div>
           {diary.imageUrl && (
-            <img src={diary.imageUrl} alt="生成された画像" className="w-20 h-20 rounded-lg object-cover border border-neutral-700" />
+            <div className="w-full aspect-video rounded-lg overflow-hidden">
+              <img
+                src={diary.imageUrl}
+                alt="生成された画像"
+                className="w-full h-full object-cover"
+              />
+            </div>
           )}
-          <div>
-            {/* <div className="text-sm text-neutral-400">感情: {diary.emotion}</div> */}
-            <div className="text-xs text-neutral-500 pt-1">{new Date(diary.createdAt).toLocaleString()}</div>
-          </div>
+          <p className="text-lg whitespace-pre-wrap text-white max-h-[40vh] overflow-y-auto">{diary.text}</p>
         </div>
-        <p className="text-lg whitespace-pre-wrap text-white max-h-[60vh] overflow-y-auto">{diary.text}</p>
       </motion.div>
     </div>
   )

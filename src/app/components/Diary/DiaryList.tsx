@@ -1,16 +1,28 @@
 import React from 'react'
 import { Diary } from '@/types/diary'
 import { motion } from 'framer-motion'
-import { PlusIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 
 type Props = {
   diaries: Diary[]
   onSelect: (diary: Diary) => void
   selectedDiary: Diary | null
   onAddNewDiary: () => void
+  onDeleteDiary: (diaryId: string) => Promise<void>
+  onRegenerateImage: (diary: Diary) => Promise<void>
 }
 
-const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary, onAddNewDiary }) => {
+const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary, onAddNewDiary, onDeleteDiary, onRegenerateImage }) => {
+  const handleDelete = async (e: React.MouseEvent, diaryId: string) => {
+    e.stopPropagation(); // クリックイベントの伝播を停止
+    await onDeleteDiary(diaryId);
+  };
+
+  const handleRegenerate = async (e: React.MouseEvent, diary: Diary) => {
+    e.stopPropagation(); // クリックイベントの伝播を停止
+    await onRegenerateImage(diary);
+  };
+
   return (
     <div className="p-4 h-full flex flex-col">
       <SectionLabel>日記一覧</SectionLabel>
@@ -50,9 +62,9 @@ const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary, onAddNew
               whileTap={{ scale: 0.97 }}
               onClick={() => onSelect(diary)}
               className={`
-                w-52 h-52 p-3 rounded-xl cursor-pointer
+                w-52 h-52 rounded-xl cursor-pointer
                 border-2 border-border bg-neutral-800 aspect-square
-                transition-colors duration-150 flex flex-col justify-between
+                transition-colors duration-150 overflow-hidden relative
                 ${ 
                   selectedDiary && selectedDiary.id === diary.id
                     ? 'bg-primary/10 ring-2 ring-primary border-primary'
@@ -60,12 +72,39 @@ const DiaryList: React.FC<Props> = ({ diaries, onSelect, selectedDiary, onAddNew
                 }
               `}
             >
-              <div className="text-xs text-muted-foreground mb-1" suppressHydrationWarning>
-                {new Date(diary.createdAt).toLocaleDateString('ja-JP')}
+              <div className="absolute top-2 right-2 flex gap-2 z-10">
+                <button
+                  onClick={(e) => handleRegenerate(e, diary)}
+                  className="p-1 rounded-full bg-neutral-900/80 hover:bg-blue-500/80 transition-colors"
+                  aria-label="画像を再生成"
+                >
+                  <ArrowPathIcon className="h-4 w-4 text-neutral-400 hover:text-white" />
+                </button>
+                <button
+                  onClick={(e) => handleDelete(e, diary.id)}
+                  className="p-1 rounded-full bg-neutral-900/80 hover:bg-red-500/80 transition-colors"
+                  aria-label="日記を削除"
+                >
+                  <TrashIcon className="h-4 w-4 text-neutral-400 hover:text-white" />
+                </button>
               </div>
-              <p className="text-sm line-clamp-3 text-foreground/80 flex-1">
-                {diary.text || '(本文なし)'}
-              </p>
+              <div className="h-[30%] p-3 flex flex-col">
+                <div className="text-xs text-muted-foreground mb-1" suppressHydrationWarning>
+                  {new Date(diary.createdAt).toLocaleDateString('ja-JP')}
+                </div>
+                <p className="text-sm line-clamp-2 text-foreground/80">
+                  {diary.text || '(本文なし)'}
+                </p>
+              </div>
+              {diary.imageUrl && (
+                <div className="h-[70%] relative">
+                  <img
+                    src={diary.imageUrl}
+                    alt="日記の画像"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

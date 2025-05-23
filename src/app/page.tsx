@@ -10,7 +10,7 @@ import DiaryViewer from './components/Diary/DiaryViewer'
 import Sidebar, { NavItemKey } from './components/Sidebar/Sidebar'
 import AvatarDisplay from './components/AvatarDisplay/AvatarDisplay'
 import AvatarUploadForm from './components/AvatarUpload/AvatarUploadForm'
-import { saveAvatarToDB, getAvatarFromDB, clearAvatarFromDB, saveDiaryToDB, getDiariesFromDB, deleteAllDiariesFromDB, AvatarData } from '../utils/db'
+import { saveAvatarToDB, getAvatarFromDB, clearAvatarFromDB, saveDiaryToDB, getDiariesFromDB, deleteAllDiariesFromDB, AvatarData, deleteDiaryFromDB } from '../utils/db'
 
 export default function HomePage() {
   const [diaries, setDiaries] = useState<Diary[]>([])
@@ -94,6 +94,60 @@ export default function HomePage() {
 
   const handleCloseViewer = () => {
     setSelectedDiary(null)
+  }
+
+  const handleDeleteDiary = async (diaryId: string) => {
+    if (!window.confirm('この日記を削除しますか？この操作は取り消せません。')) {
+      return;
+    }
+    try {
+      await deleteDiaryFromDB(diaryId);
+      setDiaries(diaries.filter(diary => diary.id !== diaryId));
+      if (selectedDiary?.id === diaryId) {
+        setSelectedDiary(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete diary", error);
+      alert('日記の削除に失敗しました。');
+    }
+  }
+
+  const handleRegenerateImage = async (diary: Diary) => {
+    if (!window.confirm('この日記の画像を再生成しますか？')) {
+      return;
+    }
+    try {
+      const response = await fetch('/api/generateAvatarImage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: diary.text,
+          imageBase64: diary.imageUrl.split(',')[1]
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '画像の再生成に失敗しました');
+      }
+
+      const updatedDiary = {
+        ...diary,
+        imageUrl: data.imageUrl
+      };
+
+      await saveDiaryToDB(updatedDiary);
+      setDiaries(diaries.map(d => d.id === diary.id ? updatedDiary : d));
+      if (selectedDiary?.id === diary.id) {
+        setSelectedDiary(updatedDiary);
+      }
+    } catch (error) {
+      console.error("Failed to regenerate image", error);
+      alert('画像の再生成に失敗しました。');
+    }
   }
 
   const handleAvatarUpload = useCallback(async (file: File, fileType: 'gif' | 'mp4', name: string) => {
@@ -275,6 +329,8 @@ export default function HomePage() {
               onSelect={handleSelectDiary}
               selectedDiary={selectedDiary}
               onAddNewDiary={handleNewDiary}
+              onDeleteDiary={handleDeleteDiary}
+              onRegenerateImage={handleRegenerateImage}
             />
           </motion.aside>
         )}
